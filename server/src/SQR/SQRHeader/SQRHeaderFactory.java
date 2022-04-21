@@ -3,7 +3,8 @@ package SQR.SQRHeader;
 public class SQRHeaderFactory {
     public enum SQRHeaderType {
         Default,
-        Rounded, Diamond, Circle
+        Rounded, Diamond, Circle,
+        Leaf
     }
 
     public static SQRHeader create(SQRHeaderType type) {
@@ -16,6 +17,8 @@ public class SQRHeaderFactory {
                 return new Circle();
             case Diamond:
                 return new Diamond();
+            case Leaf:
+                return new Leaf();
             default:
                 return null;
         }
