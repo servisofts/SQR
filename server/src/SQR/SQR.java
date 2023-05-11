@@ -1,8 +1,14 @@
 package SQR;
 
+import com.google.zxing.BinaryBitmap;
 import com.google.zxing.Dimension;
 import com.google.zxing.EncodeHintType;
+import com.google.zxing.LuminanceSource;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.Result;
 import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.google.zxing.qrcode.encoder.ByteMatrix;
 import com.google.zxing.qrcode.encoder.Encoder;
@@ -19,6 +25,7 @@ import SQR.SQRHeader.SQRHeaderFactory.SQRHeaderType;
 import SQR.SQRImage.SQRImage;
 import SQR.SQRBody.*;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +34,8 @@ import java.util.Hashtable;
 import java.awt.image.*;
 import java.awt.*;
 import java.awt.BasicStroke;
+import java.awt.geom.Point2D;
+
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -42,15 +51,17 @@ public class SQR {
     private SQRImage imagen;
     private int width;
     private int height;
-    private String colorBackground = "#ffffff";
-    private String colorBody = "#000000";
-    private String colorHeader = "#000000";
+    public String type_color = "";
+    private String colorBackground = "";
+    public String colorBody = "#000000";
+    public String colorBody2 = "#000000";
+    public String colorHeader = "";
     private String colorImageBackground;
 
     public SQR(String content) {
         this.content = content;
-        this.width = 1024;
-        this.height = 1024;
+        this.width = 1000;
+        this.height = 1000;
         this.body = SQRBodyFactory.create(SQRBodyType.Default);
         this.header = SQRHeaderFactory.create(SQRHeaderType.Default);
         this.framework = SQRFrameworkFactory.create(SQRFrameworkType.Default);
@@ -76,7 +87,7 @@ public class SQR {
     public QRCode createQr() {
         Hashtable<EncodeHintType, Object> qrParam = new Hashtable<EncodeHintType, Object>();
         qrParam.put(EncodeHintType.CHARACTER_SET, "utf-8");
-        qrParam.put(EncodeHintType.MARGIN, 0);
+        // qrParam.put(EncodeHintType.MARGIN, 0);
         try {
             this.qr = Encoder.encode(this.content, ErrorCorrectionLevel.H, qrParam);
             return this.qr;
@@ -119,58 +130,74 @@ public class SQR {
         return b64;
     }
 
+    public int fw;
+
     private BufferedImage toBufferedImage() {
         QRCode code = this.qr;
-        int quietZone = 0;
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = image.createGraphics();
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graphics.setBackground(Color.decode(this.colorBackground));
-        graphics.clearRect(0, 0, width, height);
-        graphics.setColor(Color.decode(this.colorBody));
-        // graphics.setStroke(new BasicStroke(0.3f));
         ByteMatrix input = code.getMatrix();
+        System.out.println("Iniciando toBufferedImage");
         if (input == null) {
             throw new IllegalStateException();
         }
         int inputWidth = input.getWidth();
         int inputHeight = input.getHeight();
-        int qrWidth = inputWidth + (quietZone * 2);
-        int qrHeight = inputHeight + (quietZone * 2);
-        int outputWidth = Math.max(width, qrWidth);
-        int outputHeight = Math.max(height, qrHeight);
-        int multiple = Math.min(outputWidth / qrWidth, outputHeight / qrHeight);
-        int leftPadding = (outputWidth - (inputWidth * multiple)) / 2;
-        int topPadding = (outputHeight - (inputHeight * multiple)) / 2;
-        for (int inputY = 0, outputY = topPadding; inputY < inputHeight; inputY++, outputY += multiple) {
-            for (int inputX = 0, outputX = leftPadding; inputX < inputWidth; inputX++, outputX += multiple) {
-                if (input.get(inputX, inputY) == 1) {
-                    if (!(inputX <= FINDER_PATTERN_SIZE && inputY <= FINDER_PATTERN_SIZE ||
-                            inputX >= inputWidth - FINDER_PATTERN_SIZE && inputY <= FINDER_PATTERN_SIZE ||
-                            inputX <= FINDER_PATTERN_SIZE && inputY >= inputHeight - FINDER_PATTERN_SIZE)) {
-                        this.body.fill(this, graphics, outputX, outputY, multiple, multiple);
-                    }
+        int multiple = 50;
+        int quietZone = 0;
+        int fw = inputWidth * multiple;
+        this.fw = fw;
+        int fh = inputHeight * multiple;
+        BufferedImage image = new BufferedImage(fw, fh,
+                BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        if (this.colorBackground.length() > 0) {
+            graphics.setBackground(Color.decode(this.colorBackground));
+            graphics.clearRect(0, 0, fw, fh);
+
+        } else {
+            graphics.clearRect(0, 0, fw, fh);
+            graphics.setComposite(AlphaComposite.Clear);
+            graphics.fillRect(0, 0, fw, fh);
+            graphics.setComposite(AlphaComposite.SrcOver);
+
+        }
+
+        int leftPadding = 0;
+        int topPadding = 0;
+
+        Utils.setBodyColor(this, graphics);
+
+        for (int i = 0; i < inputWidth; i++) {
+            for (int j = 0; j < inputHeight; j++) {
+                if (Utils.getFromMatrix(input, i, j) == 1) {
+                    this.body.fill(this, graphics, i, j, multiple, i * multiple, j * multiple);
                 }
             }
         }
         int circleDiameter = multiple * FINDER_PATTERN_SIZE;
         this.framework.fill(this, graphics, leftPadding, topPadding, circleDiameter, circleDiameter);
+        Utils.resetBackgroundColor(graphics);
         this.header.fill(this, graphics, leftPadding, topPadding, circleDiameter, circleDiameter);
 
         this.framework.fill(this, graphics, leftPadding + (inputWidth - FINDER_PATTERN_SIZE) * multiple, topPadding,
                 circleDiameter, circleDiameter);
+        Utils.resetBackgroundColor(graphics);
         this.header.fill(this, graphics, leftPadding + (inputWidth - FINDER_PATTERN_SIZE) * multiple, topPadding,
                 circleDiameter, circleDiameter);
 
         this.framework.fill(this, graphics, leftPadding, topPadding + (inputHeight - FINDER_PATTERN_SIZE) * multiple,
                 circleDiameter, circleDiameter);
+        Utils.resetBackgroundColor(graphics);
         this.header.fill(this, graphics, leftPadding, topPadding + (inputHeight - FINDER_PATTERN_SIZE) * multiple,
                 circleDiameter, circleDiameter);
 
         if (this.imagen != null) {
             this.imagen.fill(this, graphics, inputWidth, multiple);
         }
+        System.out.println("Termino toBufferedImage");
         return image;
+
     }
 
     public String getColorBackground() {
@@ -193,6 +220,10 @@ public class SQR {
         this.colorBody = colorBody;
     }
 
+    public void setColorBody2(String colorBody2) {
+        this.colorBody2 = colorBody2;
+    }
+
     public void setColorHeader(String colorHeader) {
         this.colorHeader = colorHeader;
     }
@@ -208,11 +239,40 @@ public class SQR {
     public void setColorImageBackground(String colorImageBackground) {
         this.colorImageBackground = colorImageBackground;
     }
+
     public String getColorImageBackground() {
         return colorImageBackground;
     }
 
     public QRCode getQr() {
         return qr;
+    }
+
+    public void setType_color(String type_color) {
+        // linear, radial, default
+        this.type_color = type_color;
+    }
+
+    public String getType_color() {
+        return type_color;
+    }
+
+    public static String readQRCodeFromBase64(String base64Image) {
+        try {
+            // Decodifica la imagen base64
+            byte[] decodedImageBytes = Base64.getDecoder().decode(base64Image);
+            ByteArrayInputStream bis = new ByteArrayInputStream(decodedImageBytes);
+            BufferedImage image = ImageIO.read(bis);
+
+            // Lee el contenido del código QR
+            LuminanceSource source = new BufferedImageLuminanceSource(image);
+            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+            Result result = new MultiFormatReader().decode(bitmap);
+
+            return result.getText();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

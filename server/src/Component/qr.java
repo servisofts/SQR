@@ -11,6 +11,8 @@ import SQR.SQRFramework.SQRFrameworkFactory.SQRFrameworkType;
 import SQR.SQRHeader.SQRHeaderFactory.SQRHeaderType;
 import SQR.SQRImage.SQRImage;
 import Server.SSSAbstract.SSSessionAbstract;
+import Servisofts.SConfig;
+import Servisofts.SUtil;
 
 public class qr {
     public static final String COMPONENT = "qr";
@@ -58,31 +60,62 @@ public class qr {
             if (data.has("height")) {
                 qr.setHeight(data.getInt("height"));
             }
-            if (data.has("body")) {
+            if (data.has("body") && !data.getString("body").isEmpty()) {
                 qr.setBody(SQRBodyType.valueOf(data.getString("body")));
             }
-            if (data.has("header")) {
+            if (data.has("header") && !data.getString("header").isEmpty()) {
                 qr.setHeader(SQRHeaderType.valueOf(data.getString("header")));
             }
-            if (data.has("framework")) {
+            if (data.has("framework") && !data.getString("framework").isEmpty()) {
                 qr.setFramework(SQRFrameworkType.valueOf(data.getString("framework")));
             }
-            if (data.has("colorBackground")) {
+            if (data.has("colorBackground") && !data.getString("colorBackground").isEmpty()) {
                 qr.setColorBackground(data.getString("colorBackground"));
             }
-            if (data.has("colorBody")) {
+            if (data.has("colorBody") && !data.getString("colorBody").isEmpty()) {
                 qr.setColorBody(data.getString("colorBody"));
             }
-            if (data.has("colorHeader")) {
+            if (data.has("colorBody2") && !data.getString("colorBody2").isEmpty()) {
+                qr.setColorBody2(data.getString("colorBody2"));
+            }
+            if (data.has("type_color") && !data.getString("type_color").isEmpty()) {
+                qr.setType_color(data.getString("type_color"));
+            }
+            if (data.has("colorHeader") && !data.getString("colorHeader").isEmpty()) {
                 qr.setColorHeader(data.getString("colorHeader"));
             }
-            if (data.has("colorImageBackground")) {
+            if (data.has("colorImageBackground") && !data.getString("colorImageBackground").isEmpty()) {
                 qr.setColorImageBackground(data.getString("colorImageBackground"));
             }
-            if (data.has("image")) {
+            if (data.has("image") && !data.getString("image").isEmpty()) {
                 qr.setImagen(new SQRImage(data.getString("image")));
             }
-            data.put("b64", qr.toB64());
+            if (data.has("image_src") && !data.getString("image_src").isEmpty()) {
+                qr.setImagen(new SQRImage(data.getString("image_src"), true));
+            }
+
+            String reponse_type = "b64";
+            if (data.has("reponse_type")) {
+                reponse_type = data.getString("reponse_type");
+            }
+            String key = SUtil.uuid();
+            if (data.has("key")) {
+                key = data.getString("key");
+            }
+            data = new JSONObject();
+
+            switch (reponse_type) {
+                case "b64":
+                    data.put("b64", qr.toB64());
+                    break;
+                case "image":
+                    qr.saveImage(SConfig.getJSON("files").getString("url") + "/" + key);
+                    data.put("key", key);
+                    data.put("src", "https://qr.servisofts.com/images/" + key);
+                    break;
+            }
+            obj.put("data", data);
+
             obj.put("estado", "exito");
         } catch (Exception e) {
             obj.put("estado", "error");

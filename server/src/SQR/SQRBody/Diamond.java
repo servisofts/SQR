@@ -6,19 +6,19 @@ import SQR.SQR;
 public class Diamond implements SQRBody {
 
     @Override
-    public void fill(SQR qr,Graphics2D g, int x, int y, int width, int height) {
+    public void fill(SQR qr, Graphics2D g, int x, int y, int width, int xf, int yf) {
 
         int[] xP = {
-                x + width / 2,
-                x + width,
-                x + width / 2,
-                x
+                xf + width / 2,
+                xf + width,
+                xf + width / 2,
+                xf
         };
         int[] yP = {
-                y,
-                y + height / 2,
-                y + height,
-                y + height / 2
+                yf,
+                yf + width / 2,
+                yf + width,
+                yf + width / 2
         };
         g.fillPolygon(xP, yP, xP.length);
 

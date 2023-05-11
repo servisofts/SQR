@@ -3,6 +3,7 @@ package SQR.SQRBody;
 public class SQRBodyFactory {
     public enum SQRBodyType {
         Default,
+        Dot,
         Rounded,
         RoundedConectHorizontal,
         RoundedConectVertical,
@@ -51,6 +52,8 @@ public class SQRBodyFactory {
                 return new DiamondConectVertical();
             case DiamondConectVH:
                 return new DiamondConectVH();
+            case Dot:
+                return new Dot();
             default:
                 return null;
         }
