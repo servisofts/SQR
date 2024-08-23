@@ -16,6 +16,7 @@ import com.google.zxing.qrcode.encoder.QRCode;
 
 import SQR.SQRBody.SQRBodyFactory;
 import SQR.SQRBody.SQRBodyFactory.SQRBodyType;
+import SQR.SQRDetail.SQRDetail;
 import SQR.SQRFramework.SQRFramework;
 import SQR.SQRFramework.SQRFrameworkFactory;
 import SQR.SQRFramework.SQRFrameworkFactory.SQRFrameworkType;
@@ -42,6 +43,11 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 
 public class SQR {
+
+    public enum SQRContentType {
+        text, qr_base64
+    }
+
     final int FINDER_PATTERN_SIZE = 7;
     private String content;
     private QRCode qr;
@@ -49,6 +55,7 @@ public class SQR {
     private SQRHeader header;
     private SQRFramework framework;
     private SQRImage imagen;
+    private SQRDetail detail;
     private int width;
     private int height;
     public String type_color = "";
@@ -57,15 +64,33 @@ public class SQR {
     public String colorBody2 = "#000000";
     public String colorHeader = "";
     private String colorImageBackground;
+    private ErrorCorrectionLevel errorCorrectionLevel;
 
-    public SQR(String content) {
-        this.content = content;
+    public SQR(String content, SQRContentType type) throws Exception {
+
+        switch (type) {
+            case text:
+                this.content = content;
+                break;
+            case qr_base64:
+                this.content = readQRCodeFromBase64(content);
+
+                break;
+            default:
+                this.content = content;
+                break;
+
+        }
+        System.out.println("Contenido del QR: \n" + this.content);
+        if (this.content == null) {
+            throw new Exception("error");
+        }
         this.width = 1000;
         this.height = 1000;
         this.body = SQRBodyFactory.create(SQRBodyType.Default);
         this.header = SQRHeaderFactory.create(SQRHeaderType.Default);
         this.framework = SQRFrameworkFactory.create(SQRFrameworkType.Default);
-        this.createQr();
+        this.errorCorrectionLevel = ErrorCorrectionLevel.H;
     }
 
     public void setBody(SQRBodyType _body) {
@@ -84,12 +109,20 @@ public class SQR {
         this.imagen = imagen;
     }
 
+    public void setDetail(SQRDetail detail) {
+        this.detail = detail;
+    }
+
+    public void setErrorCorrectionLevel(ErrorCorrectionLevel errorCorrectionLevel) {
+        this.errorCorrectionLevel = errorCorrectionLevel;
+    }
+
     public QRCode createQr() {
         Hashtable<EncodeHintType, Object> qrParam = new Hashtable<EncodeHintType, Object>();
         qrParam.put(EncodeHintType.CHARACTER_SET, "utf-8");
         // qrParam.put(EncodeHintType.MARGIN, 0);
         try {
-            this.qr = Encoder.encode(this.content, ErrorCorrectionLevel.H, qrParam);
+            this.qr = Encoder.encode(this.content, this.errorCorrectionLevel, qrParam);
             return this.qr;
         } catch (WriterException e) {
             e.printStackTrace();
@@ -135,7 +168,6 @@ public class SQR {
     private BufferedImage toBufferedImage() {
         QRCode code = this.qr;
         ByteMatrix input = code.getMatrix();
-        System.out.println("Iniciando toBufferedImage");
         if (input == null) {
             throw new IllegalStateException();
         }
@@ -195,7 +227,10 @@ public class SQR {
         if (this.imagen != null) {
             this.imagen.fill(this, graphics, inputWidth, multiple);
         }
-        System.out.println("Termino toBufferedImage");
+
+        if (this.detail != null) {
+            return this.detail.fill(this, image);
+        }
         return image;
 
     }
@@ -255,6 +290,10 @@ public class SQR {
 
     public String getType_color() {
         return type_color;
+    }
+
+    public SQRDetail getDetail() {
+        return detail;
     }
 
     public static String readQRCodeFromBase64(String base64Image) {

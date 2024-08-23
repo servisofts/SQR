@@ -1,27 +1,13 @@
-import { SPageListProps } from 'servisofts-component'
+import { SPage, SPageListProps } from 'servisofts-component';
 
-import InicioPage from "./InicioPage";
-import CargaPage from './CargaPage/index';
-import Usuario from './Usuario';
-import AjustesPage from './AjustesPage';
-import Servicios from './Servicios';
-import CabeceraDato from './CabeceraDato';
+import root from "./root";
+import qr from './qr';
+import qr2 from './qr2';
 
-import Services from '../Services';
-const Pages: SPageListProps = {
-    "inicio": InicioPage,
-    "carga": CargaPage,
-    AjustesPage,
-    ...Usuario.Pages,
-    ...Servicios.Pages,
-    ...CabeceraDato.Pages,
-    ...Services.Pages
-}
+export default SPage.combinePages("/", {
+    "": root,
+    qr,
+    qr2,
+});
 
 
-export const Reducers = {
-    ...Usuario.Reducers,
-    ...Servicios.Reducers,
-    ...CabeceraDato.Reducers
-}
-export default Pages;

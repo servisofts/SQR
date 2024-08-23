@@ -29,7 +29,7 @@ public class SQRImage {
             // ByteArrayOutputStream baos = new ByteArrayOutputStream();
             // ImageIO.write(this.image, "png", baos);
         } catch (Exception e) {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
     }
 
@@ -38,13 +38,16 @@ public class SQRImage {
             byte[] decoded = Base64.getDecoder().decode(b64);
             this.image = ImageIO.read(new ByteArrayInputStream(decoded));
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             // TODO Auto-generated catch block
-            e.printStackTrace();
+            // e.printStackTrace();
         }
     }
 
     public void fill(SQR qr, Graphics2D g, int width, int multiple) {
+        if(this.image == null){
+            return;
+        }
         double mitad = (int) width / 2;
         int tercio = (int) (width / 3);
 
@@ -88,6 +91,9 @@ public class SQRImage {
     }
 
     public void fill2(SQR qr, Graphics2D g, int width, int multiple) {
+        if(this.image == null){
+            return;
+        }
         int size = ((width / 3) * multiple); // par;
         int xc = (width * multiple) / 2;
 

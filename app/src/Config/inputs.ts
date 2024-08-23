@@ -8,7 +8,8 @@ const inputs = () => {
                 left: 0,
                 fontSize: 12,
                 width: "100%",
-                // color: STheme.color.text,
+                fontWeight: "bold",
+                color: STheme.color.gray,
                 // backgroundColor:STheme.color.primary+"22",
                 // borderRadius:4,
                 // padding:4,
@@ -20,14 +21,13 @@ const inputs = () => {
                 height: 40,
                 borderRadius: 4,
                 marginTop: 30,
-                paddingStart: 4,
+                // paddingStart: 4,
                 backgroundColor: STheme.color.card,
                 // backgroundColor: '#E0E0E0' + '35'
             },
             InputText: {
-                // fontSize: 16,
-
-                paddingStart: 8,
+                fontSize: 16,
+                paddingStart: 4,
                 color: STheme.color.text,
                 // backgroundColor: "#E0E0E0" + "55",
                 // height: 55,

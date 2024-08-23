@@ -1,4 +1,5 @@
 export default {
+    debug: true,
     name: 'sqr',
     host: 'qr.servisofts.com',
     ssl: true,

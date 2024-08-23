@@ -5,8 +5,14 @@ import java.util.List;
 
 import org.json.JSONObject;
 
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+
 import SQR.SQR;
+import SQR.SQR.SQRContentType;
 import SQR.SQRBody.SQRBodyFactory.SQRBodyType;
+import SQR.SQRDetail.SQRDetail;
+import SQR.SQRDetail.SQRDetailFactory;
+import SQR.SQRDetail.SQRDetailFactory.SQRDetailType;
 import SQR.SQRFramework.SQRFrameworkFactory.SQRFrameworkType;
 import SQR.SQRHeader.SQRHeaderFactory.SQRHeaderType;
 import SQR.SQRImage.SQRImage;
@@ -41,19 +47,36 @@ public class qr {
      * colorHeader: "#000000"
      * }
      */
+
     public static void getTypes(JSONObject obj, SSSessionAbstract session) {
         JSONObject response = new JSONObject();
         response.put("body", Arrays.asList(SQRBodyType.values()));
         response.put("header", Arrays.asList(SQRHeaderType.values()));
         response.put("framework", Arrays.asList(SQRFrameworkType.values()));
+        response.put("detail", Arrays.asList(SQRDetailType.values()));
+        response.put("content_type", Arrays.asList(SQRContentType.values()));
+        response.put("errorCorrectionLevel", Arrays.asList(ErrorCorrectionLevel.values()));
         obj.put("data", response);
         obj.put("estado", "exito");
     }
 
     public static void registro(JSONObject obj, SSSessionAbstract session) {
         try {
+            System.out.println("Se solicito crear un qr");
             JSONObject data = obj.getJSONObject("data");
-            SQR qr = new SQR(data.getString("content"));
+            SQRContentType content_type;
+            if (data.has("content_type") && !data.getString("content_type").isEmpty()) {
+                content_type = SQRContentType.valueOf(data.getString("content_type"));
+            } else {
+                content_type = SQRContentType.text;
+            }
+
+            SQR qr = new SQR(data.getString("content"), content_type);
+            if (data.has("errorCorrectionLevel") && !data.getString("errorCorrectionLevel").isEmpty()) {
+                qr.setErrorCorrectionLevel(ErrorCorrectionLevel.valueOf(data.getString("errorCorrectionLevel")));
+            }
+            qr.createQr();
+
             if (data.has("width")) {
                 qr.setWidth(data.getInt("width"));
             }
@@ -68,6 +91,15 @@ public class qr {
             }
             if (data.has("framework") && !data.getString("framework").isEmpty()) {
                 qr.setFramework(SQRFrameworkType.valueOf(data.getString("framework")));
+            }
+            if (data.has("detail") && !data.getString("detail").isEmpty()) {
+                JSONObject data_detail;
+                if (data.has("detail_data")) {
+                    data_detail = data.getJSONObject("detail_data");
+                } else {
+                    data_detail = new JSONObject();
+                }
+                qr.setDetail(SQRDetailFactory.create(SQRDetailType.valueOf(data.getString("detail")), data_detail));
             }
             if (data.has("colorBackground") && !data.getString("colorBackground").isEmpty()) {
                 qr.setColorBackground(data.getString("colorBackground"));
@@ -119,6 +151,7 @@ public class qr {
             obj.put("estado", "exito");
         } catch (Exception e) {
             obj.put("estado", "error");
+            obj.put("error", e.getMessage());
             e.printStackTrace();
         }
     }
